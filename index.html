@@ -1,88 +1,57 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mochi's Moochies — Coming Soon</title>
-  <meta name="description" content="Mochi's Moochies is coming soon.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #fdf1f4;
-      --ink: #3b2a30;
-      --accent: #e98aa6;
-      --muted: #8a6f78;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
-    body {
-      font-family: 'Fredoka', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 24px 16px;
-    }
-    main { max-width: 560px; }
-    .mochi {
-      width: 120px;
-      height: 96px;
-      margin: 0 auto 28px;
-      background: #fff;
-      border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%;
-      box-shadow: 0 10px 0 -2px var(--accent), 0 18px 30px rgba(233, 138, 166, 0.3);
-      position: relative;
-      animation: bob 3s ease-in-out infinite;
-    }
-    .mochi::before, .mochi::after {
-      content: "";
-      position: absolute;
-      top: 42px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--ink);
-    }
-    .mochi::before { left: 38px; }
-    .mochi::after { right: 38px; }
-    @keyframes bob {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-    h1 {
-      font-size: clamp(2.2rem, 7vw, 3.5rem);
-      font-weight: 600;
-      line-height: 1.1;
-      margin-bottom: 12px;
-    }
-    p { font-size: 1.15rem; color: var(--muted); }
-    .tag {
-      display: inline-block;
-      margin-top: 24px;
-      padding: 8px 18px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: #fff;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .mochi { animation: none; }
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mochi — Coming Soon</title>
+<meta name="description" content="Mochi is a treat line for dogs who deserve the good stuff. Bites, chews, and daily care — coming soon." />
+<link rel="icon" type="image/png" href="assets/ballmark-white.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main>
-    <div class="mochi" aria-hidden="true"></div>
-    <h1>Mochi's Moochies</h1>
-    <p>Something sweet is on its way.</p>
-    <span class="tag">Coming Soon</span>
-  </main>
+<main class="hero-full">
+  <div class="video-bg" id="stage" aria-hidden="true">
+    <video id="mochi-video" class="mochi-video" muted playsinline preload="auto">
+      <source src="assets/mochi-scrub.mp4" type="video/mp4" />
+    </video>
+    <div class="loading-badge" id="loading-badge">
+      <span class="loading-badge-circle">
+        <img src="assets/ballmark-yellow.png" alt="" />
+      </span>
+    </div>
+  </div>
+  <div class="overlay">
+    <header class="topbar">
+      <div class="brand-block">
+        <img src="assets/wordmark-white.png" alt="Mochi" class="wordmark" />
+        <span class="tagline">Bites / Chews / Care</span>
+      </div>
+      <div class="cta-block">
+        <span class="coming-soon">Coming soon</span>
+        <span class="join-hint">Join the list below</span>
+      </div>
+    </header>
+
+    <section class="bottom-block">
+      <h1 class="headline">Coming soon.<br />He already knows.</h1>
+      <p class="subhead">Bites, chews, and daily care — nothing fancy, nothing weird.</p>
+
+      <div class="divider"></div>
+
+      <form class="signup" id="signup-form">
+        <label class="email-label" for="email">Email address — be the first to know</label>
+        <div class="signup-row">
+          <input class="email-input" id="email" name="email" type="email" placeholder="you@example.com" required />
+          <button class="notify-btn" type="submit">Notify me</button>
+        </div>
+      </form>
+      <p class="form-note" id="form-note">No spam, just treats.</p>
+    </section>
+  </div>
+</main>
+<script src="script.js"></script>
 </body>
 </html>
