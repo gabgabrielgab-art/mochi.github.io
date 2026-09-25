@@ -512,7 +512,12 @@ function initLoadingBadge() {
   if (!video || !badge) return;
   const hide = () => badge.classList.add('is-hidden');
   if (video.readyState >= 2) { hide(); return; }
-  video.addEventListener('loadeddata', hide, { once: true });
+  // If the video loaded before this ran, initMochiGaze has already seeked it
+  // to the rest pose, so readyState is low again and loadeddata won't repeat:
+  // the finished seek (or canplay) is the signal instead.
+  for (const type of ['loadeddata', 'canplay', 'seeked']) {
+    video.addEventListener(type, hide, { once: true });
+  }
 }
 
 // Missing media fallbacks: if the scrub video or the wordmark image can't be
