@@ -365,22 +365,41 @@ function initMochiGaze() {
   const touchOnly = window.matchMedia('(hover: none)');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  // Phones and tablets have no cursor to follow, so there the eyes follow
-  // the finger (tap or drag anywhere), and while nobody is touching the
-  // screen he slowly looks around the lap on his own. IDLE_AFTER is how
-  // long after the last touch the look-around resumes; WANDER_SPEED is how
-  // fast it goes round (seconds of footage per second: ~4.5s per lap).
-  const IDLE_AFTER = 2500; // ms
-  const WANDER_SPEED = 0.33;
+  // Phones and tablets have no cursor to follow. There he looks at a spot
+  // and holds it, glancing somewhere new every few seconds, and a tap makes
+  // him look at the tap. Drags are ignored: a drag is usually a scroll, and
+  // chasing the finger up and down swung the eyes half way round the lap
+  // (there is almost no "up" in the footage) on every scroll. Continuously
+  // circling the lap was tried for the idle state too; on a phone, where
+  // the face fills the screen, it read as the eyes rolling.
+  const HOLD_AFTER_TAP = 3000; // ms before glancing resumes after a tap
+  const GLANCE_MIN = 2200, GLANCE_MAX = 4200; // ms each glance is held
+  // Poses to glance between: straight ahead, then directions (radians,
+  // 0 = right, pi/2 = down) that the footage covers well.
+  const GLANCE_ANGLES = [null, 0, Math.PI, Math.PI * 0.75, Math.PI * 0.25];
+  const TOUCH_MAX_SPEED = 0.9; // calmer than the desktop MAX_SPEED
+  let glanceIndex = 0;
+  let nextGlanceTs = performance.now() + GLANCE_MIN;
   const wrapPhase = (x) => ((x % LOOP_LEN) + LOOP_LEN) % LOOP_LEN;
+  const glance = (now) => {
+    let next = Math.floor(Math.random() * (GLANCE_ANGLES.length - 1));
+    if (next >= glanceIndex) next += 1; // never the pose he is already in
+    glanceIndex = next;
+    const angle = GLANCE_ANGLES[next];
+    desiredTime = angle == null
+      ? REST_TIME
+      : timeForAngle(angle, desiredTime, LOOP_LEN, FULL_POSE_SRC * 0.8);
+    nextGlanceTs = now + GLANCE_MIN + Math.random() * (GLANCE_MAX - GLANCE_MIN);
+  };
 
   const tick = (ts) => {
     frame = 0;
     if (lastTickTs == null) lastTickTs = ts;
     const dt = Math.min((ts - lastTickTs) / 1000, 0.1);
     lastTickTs = ts;
-    if (touchOnly.matches && !reducedMotion.matches && performance.now() - lastTouchTs > IDLE_AFTER) {
-      desiredTime = LOOP_START + wrapPhase(desiredTime - LOOP_START + WANDER_SPEED * dt);
+    const now = performance.now();
+    if (touchOnly.matches && !reducedMotion.matches && now > nextGlanceTs && now - lastTouchTs > HOLD_AFTER_TAP) {
+      glance(now);
     }
     if (video.readyState >= 2 && !video.seeking) {
       // Position is a phase on the ring [0, LOOP_LEN). Take the shorter
@@ -394,7 +413,8 @@ function initMochiGaze() {
         // Constant speed on a long move, easing out over the last stretch:
         // speed shrinks in proportion to the distance left, so the eyes
         // settle onto the target instead of stopping dead.
-        const speed = Math.min(MAX_SPEED, EASE_RATE * Math.abs(diff));
+        const maxSpeed = touchOnly.matches ? TOUCH_MAX_SPEED : MAX_SPEED;
+        const speed = Math.min(maxSpeed, EASE_RATE * Math.abs(diff));
         const step = Math.sign(diff) * Math.min(Math.abs(diff), speed * dt);
         video.currentTime = LOOP_START + wrapPhase(phase + step);
       }
@@ -463,19 +483,18 @@ function initMochiGaze() {
     );
   };
   const move = (e) => {
+    if (e.pointerType && e.pointerType !== 'mouse') return; // touch drags are scrolls
     pointer = { x: e.clientX, y: e.clientY };
-    if (e.pointerType && e.pointerType !== 'mouse') lastTouchTs = performance.now();
     updateTarget();
   };
-  // A touch drag can be taken over by scrolling, which cancels its pointer
-  // events, so touch positions are also read from the touch events.
-  const touch = (e) => {
-    const t = e.touches[0];
-    if (!t) return;
+  const tap = (e) => {
     prime();
+    if (e.pointerType === 'mouse') return;
     lastTouchTs = performance.now();
-    pointer = { x: t.clientX, y: t.clientY };
+    nextGlanceTs = lastTouchTs + HOLD_AFTER_TAP;
+    pointer = { x: e.clientX, y: e.clientY };
     updateTarget();
+    pointer = null; // a tap is one look, not a position to keep tracking on resize/scroll
   };
   // iOS Safari won't fetch a video's frames (so loadeddata never fires)
   // until it has been played once. Playing and immediately pausing it,
@@ -484,6 +503,8 @@ function initMochiGaze() {
   let primed = false;
   const prime = () => {
     if (primed || video.readyState >= 2) return;
+    // Start from the rest pose, not the unused wandering footage before the lap.
+    if (video.currentTime < LOOP_START) video.currentTime = REST_TIME;
     const attempt = video.play();
     if (attempt && attempt.then) {
       attempt.then(() => { primed = true; video.pause(); }).catch(() => {});
@@ -501,9 +522,7 @@ function initMochiGaze() {
 
   video.addEventListener('loadeddata', ready);
   window.addEventListener('pointermove', move, { passive: true });
-  window.addEventListener('pointerdown', move, { passive: true });
-  window.addEventListener('touchstart', touch, { passive: true });
-  window.addEventListener('touchmove', touch, { passive: true });
+  window.addEventListener('pointerdown', tap, { passive: true });
   window.addEventListener('resize', updateTarget);
   window.addEventListener('scroll', updateTarget, { passive: true });
   prime();
