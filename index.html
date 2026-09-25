@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mochi's Moochies — Coming Soon</title>
+  <meta name="description" content="Mochi's Moochies is coming soon.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fdf1f4;
+      --ink: #3b2a30;
+      --accent: #e98aa6;
+      --muted: #8a6f78;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Fredoka', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px 16px;
+    }
+    main { max-width: 560px; }
+    .mochi {
+      width: 120px;
+      height: 96px;
+      margin: 0 auto 28px;
+      background: #fff;
+      border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%;
+      box-shadow: 0 10px 0 -2px var(--accent), 0 18px 30px rgba(233, 138, 166, 0.3);
+      position: relative;
+      animation: bob 3s ease-in-out infinite;
+    }
+    .mochi::before, .mochi::after {
+      content: "";
+      position: absolute;
+      top: 42px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ink);
+    }
+    .mochi::before { left: 38px; }
+    .mochi::after { right: 38px; }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    h1 {
+      font-size: clamp(2.2rem, 7vw, 3.5rem);
+      font-weight: 600;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+    p { font-size: 1.15rem; color: var(--muted); }
+    .tag {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mochi { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mochi" aria-hidden="true"></div>
+    <h1>Mochi's Moochies</h1>
+    <p>Something sweet is on its way.</p>
+    <span class="tag">Coming Soon</span>
+  </main>
+</body>
+</html>
