@@ -515,6 +515,39 @@ function initLoadingBadge() {
   video.addEventListener('loadeddata', hide, { once: true });
 }
 
+// Missing media fallbacks: if the scrub video or the wordmark image can't be
+// loaded, show the still mascot and a text wordmark instead of a stuck
+// loading badge and a broken image.
+function initMediaFallbacks() {
+  const video = document.getElementById('mochi-video');
+  const hero = document.querySelector('.hero-full');
+  const badge = document.getElementById('loading-badge');
+  if (video && hero) {
+    const useStill = () => {
+      hero.classList.add('no-video');
+      if (badge) badge.classList.add('is-hidden');
+    };
+    const sources = video.querySelectorAll('source');
+    const last = sources[sources.length - 1];
+    if (last) last.addEventListener('error', useStill);
+    video.addEventListener('error', useStill);
+    if (video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) useStill();
+  }
+
+  const wordmark = document.querySelector('.wordmark');
+  if (wordmark) {
+    const useText = () => {
+      const text = document.createElement('span');
+      text.className = 'wordmark-text';
+      text.textContent = wordmark.alt || 'Mochi';
+      wordmark.replaceWith(text);
+    };
+    if (wordmark.complete && wordmark.naturalWidth === 0) useText();
+    else wordmark.addEventListener('error', useText, { once: true });
+  }
+}
+
+initMediaFallbacks();
 initMochiGaze();
 initSignupForm();
 initLoadingBadge();

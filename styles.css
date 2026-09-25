@@ -77,6 +77,26 @@ html, body {
   display: block;
 }
 
+/* Shown instead of the video when assets/mochi-scrub.mp4 can't be loaded. */
+.mascot-fallback {
+  display: none;
+}
+
+.no-video .mochi-video { display: none; }
+
+.no-video .mascot-fallback {
+  display: block;
+  position: absolute;
+  top: 50%;
+  right: 6vw;
+  transform: translateY(-50%);
+  width: min(38vw, 520px, 70vh);
+  height: auto;
+  border-radius: 32px;
+  box-shadow: 0 0 0 10px var(--butter-yellow);
+  z-index: -1;
+}
+
 .loading-badge {
   position: absolute;
   inset: 0;
@@ -145,6 +165,17 @@ html, body {
 .wordmark {
   height: 26px;
   display: block;
+}
+
+/* Text stand-in used when assets/wordmark-white.png can't be loaded. */
+.wordmark-text {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.75rem;
+  line-height: 26px;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--white);
 }
 
 .tagline {
@@ -289,6 +320,14 @@ html, body {
   .bottom-block { max-width: 100%; }
   .headline { font-size: clamp(1.75rem, 7vw, 2.5rem); }
   .signup-row { max-width: 100%; }
+  .no-video .mascot-fallback {
+    position: static;
+    transform: none;
+    align-self: center;
+    width: min(60vw, 260px);
+    border-radius: 24px;
+    box-shadow: 0 0 0 6px var(--butter-yellow);
+  }
 }
 
 @media (max-width: 480px) {
