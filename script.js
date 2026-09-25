@@ -361,20 +361,31 @@ function initMochiGaze() {
   let lastTickTs = null;
   let pointer = null;
   let animating = false;
-  const mobile = window.matchMedia('(max-width: 860px)');
+  let lastTouchTs = -Infinity;
+  const touchOnly = window.matchMedia('(hover: none)');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // Phones and tablets have no cursor to follow, so there the eyes follow
+  // the finger (tap or drag anywhere), and while nobody is touching the
+  // screen he slowly looks around the lap on his own. IDLE_AFTER is how
+  // long after the last touch the look-around resumes; WANDER_SPEED is how
+  // fast it goes round (seconds of footage per second: ~4.5s per lap).
+  const IDLE_AFTER = 2500; // ms
+  const WANDER_SPEED = 0.33;
+  const wrapPhase = (x) => ((x % LOOP_LEN) + LOOP_LEN) % LOOP_LEN;
 
   const tick = (ts) => {
     frame = 0;
-    if (mobile.matches) { animating = false; lastTickTs = null; return; }
     if (lastTickTs == null) lastTickTs = ts;
     const dt = Math.min((ts - lastTickTs) / 1000, 0.1);
     lastTickTs = ts;
+    if (touchOnly.matches && !reducedMotion.matches && performance.now() - lastTouchTs > IDLE_AFTER) {
+      desiredTime = LOOP_START + wrapPhase(desiredTime - LOOP_START + WANDER_SPEED * dt);
+    }
     if (video.readyState >= 2 && !video.seeking) {
       // Position is a phase on the ring [0, LOOP_LEN). Take the shorter
       // way round to the target, so a target just across the seam is a
       // short hop instead of a sweep through the whole lap.
-      const wrapPhase = (x) => ((x % LOOP_LEN) + LOOP_LEN) % LOOP_LEN;
       const phase = wrapPhase(video.currentTime - LOOP_START);
       let diff = wrapPhase(desiredTime - LOOP_START) - phase;
       if (diff > LOOP_LEN / 2) diff -= LOOP_LEN;
@@ -396,7 +407,7 @@ function initMochiGaze() {
     if (!frame) frame = requestAnimationFrame(tick);
   };
   const updateTarget = () => {
-    if (mobile.matches || !pointer) return;
+    if (!pointer) return;
     const rect = video.getBoundingClientRect();
     const scale = Math.max(rect.width / SRC_W, rect.height / SRC_H);
     const anchorX = rect.left + rect.width / 2 + (ANCHOR_X - SRC_W / 2) * scale;
@@ -453,43 +464,49 @@ function initMochiGaze() {
   };
   const move = (e) => {
     pointer = { x: e.clientX, y: e.clientY };
+    if (e.pointerType && e.pointerType !== 'mouse') lastTouchTs = performance.now();
     updateTarget();
   };
-  // Mobile autoplay: play only the seamless lap, jumping back to its start
-  // as it ends (the clip as a whole does not loop cleanly).
-  const loopEnd = LOOP_START + LOOP_LEN;
-  const keepLapLooping = (_now, meta) => {
-    if (video.paused || !mobile.matches) return;
-    const at = meta ? meta.mediaTime : video.currentTime;
-    if (at >= loopEnd - 1 / 120 || at < LOOP_START - 0.05) {
-      video.currentTime = LOOP_START + Math.max(0, at - loopEnd);
-    }
-    if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(keepLapLooping);
+  // A touch drag can be taken over by scrolling, which cancels its pointer
+  // events, so touch positions are also read from the touch events.
+  const touch = (e) => {
+    const t = e.touches[0];
+    if (!t) return;
+    prime();
+    lastTouchTs = performance.now();
+    pointer = { x: t.clientX, y: t.clientY };
+    updateTarget();
   };
-  video.addEventListener('timeupdate', () => {
-    if (!video.requestVideoFrameCallback) keepLapLooping();
-  });
+  // iOS Safari won't fetch a video's frames (so loadeddata never fires)
+  // until it has been played once. Playing and immediately pausing it,
+  // muted, is allowed without a tap; if the browser still refuses (Low
+  // Power Mode), the first touch retries.
+  let primed = false;
+  const prime = () => {
+    if (primed || video.readyState >= 2) return;
+    const attempt = video.play();
+    if (attempt && attempt.then) {
+      attempt.then(() => { primed = true; video.pause(); }).catch(() => {});
+    }
+  };
   const ready = () => {
     video.loop = false;
-    if (video.currentTime < LOOP_START || video.currentTime >= loopEnd) {
-      video.currentTime = mobile.matches ? LOOP_START : REST_TIME;
+    video.pause();
+    if (video.currentTime < LOOP_START || video.currentTime >= LOOP_START + LOOP_LEN) {
+      video.currentTime = REST_TIME;
     }
-    if (mobile.matches && !reducedMotion.matches) {
-      video.play().then(() => {
-        if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(keepLapLooping);
-      }).catch(() => { /* leave the poster/first frame visible */ });
-    } else {
-      video.pause();
-      if (!mobile.matches) { updateTarget(); startAnimating(); }
-    }
+    updateTarget();
+    startAnimating();
   };
 
   video.addEventListener('loadeddata', ready);
-  mobile.addEventListener('change', ready);
-  reducedMotion.addEventListener('change', ready);
   window.addEventListener('pointermove', move, { passive: true });
+  window.addEventListener('pointerdown', move, { passive: true });
+  window.addEventListener('touchstart', touch, { passive: true });
+  window.addEventListener('touchmove', touch, { passive: true });
   window.addEventListener('resize', updateTarget);
   window.addEventListener('scroll', updateTarget, { passive: true });
+  prime();
   if (video.readyState >= 2) ready();
 }
 
